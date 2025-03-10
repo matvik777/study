@@ -45,8 +45,6 @@ class LaserServer:
             self.x, self.y = x, y
             status = json.dumps({"x": self.x, "y": self.y})
             self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
-            
-            self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
             print(f"server send status {status}")
             time.sleep(interval)
     

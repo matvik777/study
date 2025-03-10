@@ -13,6 +13,7 @@ class LaserClient:
         threading.Thread(target=self.receive_updates, daemon=True).start()
         
         
+        
     def set_gui(self, gui):
         self.gui = gui
            
@@ -22,8 +23,8 @@ class LaserClient:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_socket:
                 tcp_socket.connect((self.host, self.tcp_port))
                 tcp_socket.sendall(command.encode("utf-8"))
-                response = tcp_socket.recv(1024).decode("utf-8")
-                print(f"Ответ сервера: {response}") 
+                # response = tcp_socket.recv(1024).decode("utf-8")
+                # print(f"Ответ сервера: {response}") 
         except Exception as e:
             print(f"Ошибка отправки команды: {e}")   
             

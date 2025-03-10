@@ -23,9 +23,11 @@ class LaserGUI(QWidget):
         self.pixmap.fill(Qt.GlobalColor.white)
         self.canvas.setPixmap(self.pixmap)
         
+        self.trail = []
         self.laser_x = 250
         self.laser_y = 250
         self.draw_laser()
+        
         
         self.client = LaserClient()
         self.client.set_gui(self)
@@ -71,14 +73,25 @@ class LaserGUI(QWidget):
     def draw_laser(self):
         self.pixmap.fill(Qt.GlobalColor.white)
         painter = QPainter(self.pixmap)
+        step = 20
+        painter.setPen(QColor(200,200,200))
+        for x in range(0,500, step):
+            painter.drawLine(x,0,x,500)
+        for y in range(0,500, step):
+            painter.drawLine(0,y,500,y)
+        if len(self.trail) > 1:
+            painter.setPen(QColor(0,0,255))
+            for i in range(1, len(self.trail)):
+                painter.drawLine(self.trail[i-1][0], self.trail[i-1][1],
+                                self.trail[i][0], self.trail[i][1] )
         painter.setPen(QColor(255, 0, 0))
         painter.setBrush(QColor(255,0,0))
         painter.drawEllipse(self.laser_x-3 , self.laser_y -3 , 6, 6)  
         self.canvas.setPixmap(self.pixmap)
     def update_laser_position(self, x, y):
-        
+        self.trail.append((x,y))
         self.laser_x = x
-        self.laser_y = x
+        self.laser_y = y
         self.draw_laser()    
     
     
