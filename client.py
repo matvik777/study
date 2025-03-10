@@ -7,12 +7,15 @@ class LaserClient:
         self.host = host
         self.tcp_port = tcp_port
         self.udp_port = udp_port
-        
+        self.gui = None
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_socket.bind((self.host, self.udp_port))
-        
         threading.Thread(target=self.receive_updates, daemon=True).start()
         
+        
+    def set_gui(self, gui):
+        self.gui = gui
+           
     def send_move_command(self, x, y, speed):
         command = json.dumps({"cmd": "move", "x": x, "y": y, "speed": speed})
         try:
@@ -26,10 +29,14 @@ class LaserClient:
             
     def receive_updates(self):
         while True:
-            data, _ = self.udp_socket.recvfrom(1024)
-            status = json.loads(data.decode("utf-8"))
-            print(f"Laser: {status}")
-            
+            try:
+                data, _ = self.udp_socket.recvfrom(1024)
+                status = json.loads(data.decode("utf-8"))
+                print(f"Laser: {status}")
+                if self.gui:
+                    self.gui.update_laser_position(status["x"], status["y"])
+            except Exception as e:
+                print(f"Error coordinaty : {e}")
 if __name__ == "__main__":
     client = LaserClient()
     client.send_move_command(40, 40, 5)       

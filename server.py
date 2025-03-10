@@ -8,7 +8,6 @@ class LaserServer:
         self.host = host
         self.tcp_port = tcp_port
         self.udp_port = udp_port
-        
         self.x, self.y = 0, 0
         
         self.tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,15 +16,26 @@ class LaserServer:
         
         self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
-    def handle_client(self, client_socket):
+    def handle_client(self, client_socket, addr):
+        try:
+            print(f"[SERVER] Подключился клиент {addr}")  # Новое сообщение о подключении
+            data = client_socket.recv(1024).decode("utf-8")
+            command = json.loads(data)
+            print(f"[SERVER] Получил команду: {command}")
+            
+            if command["cmd"] == "move":
+                x, y, speed = command["x"], command["y"], command["speed"]
+                self.move_laser(x,y,speed)
         
-        data = client_socket.recv(1024).decode("utf-8")
-        command = json.loads(data)
-        
-        if command["cmd"] == "move":
-            x, y, speed = command["x"], command["y"], command["speed"]
-            self.move_laser(x,y,speed)
+                client_socket.send(json.dumps({"status": "OK"}).encode("utf-8"))
 
+        except Exception as e:
+            print(f"[ERROR] : {e}")
+            
+        finally:
+            client_socket.close()
+            
+            
     def move_laser(self, target_x, targer_y, speed):
     
         path = self.bresenham_line(self.x, self.y , target_x, targer_y)
@@ -35,6 +45,9 @@ class LaserServer:
             self.x, self.y = x, y
             status = json.dumps({"x": self.x, "y": self.y})
             self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
+            
+            self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
+            print(f"server send status {status}")
             time.sleep(interval)
     
     def bresenham_line(self, x1, y1, x2, y2):
@@ -64,8 +77,8 @@ class LaserServer:
         
         print(f"Сервер слушает TCP {self.host}: {self.tcp_port}")
         while True:
-            client_socket, _ = self.tcp_server.accept()
-            threading.Thread(target=self.handle_client, args=(client_socket,)).start()
+            client_socket, addr = self.tcp_server.accept()
+            threading.Thread(target=self.handle_client, args=(client_socket, addr)).start()
 if __name__ == "__main__":
     server = LaserServer()
     server.start()
