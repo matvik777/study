@@ -101,4 +101,3 @@ if __name__ == "__main__":
     window = LaserGUI()
     window.show()
     sys.exit(app.exec())
-    

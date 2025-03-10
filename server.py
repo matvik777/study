@@ -8,7 +8,7 @@ class LaserServer:
         self.host = host
         self.tcp_port = tcp_port
         self.udp_port = udp_port
-        self.x, self.y = 0, 0
+        self.x, self.y = 250, 250
         
         self.tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_server.bind(("127.0.0.1", 5000))
