@@ -24,7 +24,7 @@ class LaserGUI(QWidget):
         self.canvas.setPixmap(self.pixmap)
         
         self.canvas.mousePressEvent = self.on_canvas_click
-        self.trail = []
+        self.path = {}
         self.laser_x = 250
         self.laser_y = 250
         self.radiation = True
@@ -37,8 +37,10 @@ class LaserGUI(QWidget):
                 
         #создаем кнопки
         self.move_button = QPushButton("Move Laser", self)
-        self.move_button.clicked.connect(self.on_button_click)
-        
+        self.move_button.clicked.connect(self.on_move_button_click)
+        self.toggle_button = QPushButton("Radiation", self)
+        self.toggle_button.clicked.connect(self.on_toggle_button_click)
+
         #поля ввода
         self.x_input = QLineEdit("400")
         self.y_input = QLineEdit("400")
@@ -60,18 +62,21 @@ class LaserGUI(QWidget):
         grid_layout.addWidget(self.label_speed, 0, 4)
         grid_layout.addWidget(self.speed_input, 0, 5)
         grid_layout.addWidget(self.move_button, 1,0,1,6)
-        
+        grid_layout.addWidget(self.toggle_button,2,0,1,6)
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.frame, alignment=Qt.AlignmentFlag.AlignCenter)
         main_layout.addLayout(grid_layout)
         self.setLayout(main_layout
                        )     
-    def on_button_click(self):
+    def on_move_button_click(self):
+        
         x = int(self.x_input.text())
         y = int(self.y_input.text())
         speed = int(self.speed_input.text())
-        self.client.send_move_command(x, y, speed)       
-    
+        self.client.send_move_command(x, y, speed)    
+               
+    def on_toggle_button_click(self):
+        self.client.send_toggle_command()      
     def on_canvas_click(self, event):
         
         click_x = event.position().x()
@@ -100,11 +105,18 @@ class LaserGUI(QWidget):
             painter.drawLine(x,0,x,500)
         for y in range(0,500, step):
             painter.drawLine(0,y,500,y)
-        if len(self.trail) > 1 and self.radiation:
+        
+        for mid, path_data in self.path.items():
+            points = path_data["points"]
+            radiation = path_data["radiation"]
+            
+            if not radiation:
+                continue
             painter.setPen(QColor(0,0,255))
-            for i in range(1, len(self.trail)):
-                painter.drawLine(self.trail[i-1][0], self.trail[i-1][1],
-                                self.trail[i][0], self.trail[i][1] )
+            for i in range(1, len(points)):
+                painter.drawLine(points[i-1][0], points[i-1][1],
+                         points[i][0], points[i][1])
+        
         if self.radiation:
             painter.setPen(QColor(255, 0, 0))
             painter.setBrush(QColor(255,0,0))
@@ -117,13 +129,21 @@ class LaserGUI(QWidget):
         
                        
         self.canvas.setPixmap(self.pixmap)
-    def update_laser_position(self, x, y, radiation):
-        self.trail.append((x,y))
+    def update_laser_position(self, x, y, radiation, move_id):
         self.radiation = radiation
         self.laser_x = x
         self.laser_y = y
+        if move_id not in self.path:
+            self.path[move_id] = {
+                "points": [],
+                "radiation" : radiation  
+            }
+        if radiation:
+            self.path[move_id]["points"].append((x,y))
+        
+        
         self.draw_laser()    
-    
+        
     
        
 if __name__ == "__main__":

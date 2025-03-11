@@ -10,7 +10,7 @@ class LaserServer:
         self.udp_port = udp_port
         self.x, self.y = 250, 250
         self.radiation = False
-        
+        self.move_id = 1
         
         self.tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_server.bind(("127.0.0.1", 5000))
@@ -52,15 +52,16 @@ class LaserServer:
         
         self.stop_event.clear()
         
+        current_id = self.move_id
+        self.move_id += 1
         
         
-        
-        self.current_move_tread = threading.Thread(target=self.run_move, args=(target_x, target_y, speed), daemon=None)
+        self.current_move_tread = threading.Thread(target=self.run_move, args=(target_x, target_y, speed, current_id), daemon=None)
         self.current_move_tread.start()
     
     
     
-    def run_move(self, target_x, target_y, speed):
+    def run_move(self, target_x, target_y, speed, move_id):
         path = self.bresenham_line(self.x, self.y , target_x, target_y)
         interval = 0.1/speed
         
@@ -73,7 +74,8 @@ class LaserServer:
             status = json.dumps({
                 "x": self.x,
                 "y": self.y,
-                "radiation": self.radiation
+                "radiation": self.radiation,
+                "move_id": move_id
                 })
             self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
             time.sleep(interval)
