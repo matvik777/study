@@ -40,7 +40,8 @@ class LaserGUI(QWidget):
         self.move_button.clicked.connect(self.on_move_button_click)
         self.toggle_button = QPushButton("Radiation", self)
         self.toggle_button.clicked.connect(self.on_toggle_button_click)
-
+        self.reset_button = QPushButton("Reset", self)
+        self.reset_button.clicked.connect(self.on_reset_button_click)
         #поля ввода
         self.x_input = QLineEdit("400")
         self.y_input = QLineEdit("400")
@@ -63,11 +64,12 @@ class LaserGUI(QWidget):
         grid_layout.addWidget(self.speed_input, 0, 5)
         grid_layout.addWidget(self.move_button, 1,0,1,6)
         grid_layout.addWidget(self.toggle_button,2,0,1,6)
+        grid_layout.addWidget(self.reset_button, 3, 0, 1, 6)
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.frame, alignment=Qt.AlignmentFlag.AlignCenter)
         main_layout.addLayout(grid_layout)
-        self.setLayout(main_layout
-                       )     
+        self.setLayout(main_layout)
+             
     def on_move_button_click(self):
         
         x = int(self.x_input.text())
@@ -76,7 +78,10 @@ class LaserGUI(QWidget):
         self.client.send_move_command(x, y, speed)    
                
     def on_toggle_button_click(self):
-        self.client.send_toggle_command()      
+        self.client.send_toggle_command()
+    
+    def on_reset_button_click(self):
+        self.client.send_reset_command()      
     def on_canvas_click(self, event):
         
         click_x = event.position().x()
@@ -109,7 +114,8 @@ class LaserGUI(QWidget):
         for mid, path_data in self.path.items():
             points = path_data["points"]
             radiation = path_data["radiation"]
-            
+            if len(points) < 2:
+                continue
             if not radiation:
                 continue
             painter.setPen(QColor(0,0,255))
@@ -133,6 +139,13 @@ class LaserGUI(QWidget):
         self.radiation = radiation
         self.laser_x = x
         self.laser_y = y
+        if move_id == 0:
+            self.path.clear()
+            self.laser_x = 250
+            self.laser_y = 250
+            self.radiation = True
+            self.draw_laser()
+            return
         if move_id not in self.path:
             self.path[move_id] = {
                 "points": [],

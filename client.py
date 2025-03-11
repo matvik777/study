@@ -30,7 +30,6 @@ class LaserClient:
                
     def send_move_command(self, x, y, speed):
         command = json.dumps({"cmd": "move", "x": x, "y": y, "speed": speed})
-        # command = json.dumps({"cmd": "toggle_laser", "radiation": False})
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_socket:
                 tcp_socket.connect((self.host, self.tcp_port))
@@ -38,7 +37,17 @@ class LaserClient:
                 
         except Exception as e:
             print(f"Ошибка отправки команды: {e}")   
-            
+    
+    def send_reset_command(self):
+        command = json.dumps({"cmd": "reset"})
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_socket:
+                tcp_socket.connect((self.host, self.tcp_port))
+                tcp_socket.sendall(command.encode("utf-8"))
+                
+        except Exception as e:
+            print(f"Ошибка отправки команды: {e}")
+           
     def receive_updates(self):
         while True:
             try:

@@ -9,7 +9,7 @@ class LaserServer:
         self.tcp_port = tcp_port
         self.udp_port = udp_port
         self.x, self.y = 250, 250
-        self.radiation = False
+        self.radiation = True
         self.move_id = 1
         
         self.tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,13 +37,33 @@ class LaserServer:
             elif command["cmd"] == "toggle_laser":
                 self.radiation = not self.radiation
                 client_socket.send(json.dumps({"status": self.radiation}).encode("utf-8"))
-                print(f"Laser on? {self.radiation}")
+            elif command["cmd"] == "reset":
+                self.reset_move()
+                    
+            
         except Exception as e:
             print(f"[ERROR] : {e}")
             
         finally:
             client_socket.close()
-            
+    
+    def reset_move(self):
+        self.stop_event.set()
+        if self.current_move_tread and self.current_move_tread.is_alive():
+            self.current_move_tread.join()
+        
+        self.stop_event.clear()
+        self.x, self.y = 250, 250
+        self.radiation = True
+        status = json.dumps({
+            "x": 250,
+            "y": 250,
+            "radiation": True,
+            "move_id" : 0
+        })
+        self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
+  
+      
     def start_move(self,target_x, target_y, speed):
         
         self.stop_event.set()
