@@ -9,12 +9,18 @@ class LaserServer:
         self.tcp_port = tcp_port
         self.udp_port = udp_port
         self.x, self.y = 250, 250
+        self.radiation = False
+        
         
         self.tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_server.bind(("127.0.0.1", 5000))
         self.tcp_server.listen(5)
         
         self.udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #флаг-Event и ссылка на поток
+        self.stop_event = threading.Event()
+        self.current_move_tread = None
+        
         
     def handle_client(self, client_socket, addr):
         try:
@@ -25,28 +31,66 @@ class LaserServer:
             
             if command["cmd"] == "move":
                 x, y, speed = command["x"], command["y"], command["speed"]
-                self.move_laser(x,y,speed)
-        
-                client_socket.send(json.dumps({"status": "OK"}).encode("utf-8"))
+                self.start_move(x,y, speed)
 
+                client_socket.send(json.dumps({"status": "OK"}).encode("utf-8"))
+            elif command["cmd"] == "toggle_laser":
+                self.radiation = not self.radiation
+                client_socket.send(json.dumps({"status": self.radiation}).encode("utf-8"))
+                print(f"Laser on? {self.radiation}")
         except Exception as e:
             print(f"[ERROR] : {e}")
             
         finally:
             client_socket.close()
             
-            
-    def move_laser(self, target_x, targer_y, speed):
+    def start_move(self,target_x, target_y, speed):
+        
+        self.stop_event.set()
+        if self.current_move_tread and self.current_move_tread.is_alive():
+            self.current_move_tread.join()
+        
+        self.stop_event.clear()
+        
+        
+        
+        
+        self.current_move_tread = threading.Thread(target=self.run_move, args=(target_x, target_y, speed), daemon=None)
+        self.current_move_tread.start()
     
-        path = self.bresenham_line(self.x, self.y , target_x, targer_y)
+    
+    
+    def run_move(self, target_x, target_y, speed):
+        path = self.bresenham_line(self.x, self.y , target_x, target_y)
         interval = 0.1/speed
         
         for x, y in path:
+            
+            if self.stop_event.is_set():
+                return
+            
             self.x, self.y = x, y
-            status = json.dumps({"x": self.x, "y": self.y})
+            status = json.dumps({
+                "x": self.x,
+                "y": self.y,
+                "radiation": self.radiation
+                })
             self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
-            # print(f"server send status {status}")
             time.sleep(interval)
+    
+    
+    
+           
+    # def move_laser(self, target_x, targer_y, speed):
+    
+    #     path = self.bresenham_line(self.x, self.y , target_x, targer_y)
+    #     interval = 0.1/speed
+        
+    #     for x, y in path:
+    #         self.x, self.y = x, y
+    #         status = json.dumps({"x": self.x, "y": self.y})
+    #         self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
+    #         time.sleep(interval)
     
     def bresenham_line(self, x1, y1, x2, y2):
         

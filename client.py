@@ -19,12 +19,12 @@ class LaserClient:
            
     def send_move_command(self, x, y, speed):
         command = json.dumps({"cmd": "move", "x": x, "y": y, "speed": speed})
+        # command = json.dumps({"cmd": "toggle_laser", "radiation": False})
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as tcp_socket:
                 tcp_socket.connect((self.host, self.tcp_port))
                 tcp_socket.sendall(command.encode("utf-8"))
-                # response = tcp_socket.recv(1024).decode("utf-8")
-                # print(f"Ответ сервера: {response}") 
+                
         except Exception as e:
             print(f"Ошибка отправки команды: {e}")   
             
@@ -34,8 +34,9 @@ class LaserClient:
                 data, _ = self.udp_socket.recvfrom(1024)
                 status = json.loads(data.decode("utf-8"))
                 print(f"Laser: {status}")
+                radiation = status["radiation"]
                 if self.gui:
-                    self.gui.update_laser_position(status["x"], status["y"])
+                    self.gui.update_laser_position(status["x"], status["y"], status["radiation"])
             except Exception as e:
                 print(f"Error coordinaty : {e}")
 if __name__ == "__main__":
