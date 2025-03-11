@@ -45,30 +45,31 @@ class LaserServer:
             self.x, self.y = x, y
             status = json.dumps({"x": self.x, "y": self.y})
             self.udp_server.sendto(status.encode("utf-8"), (self.host, self.udp_port))
-            print(f"server send status {status}")
+            # print(f"server send status {status}")
             time.sleep(interval)
     
     def bresenham_line(self, x1, y1, x2, y2):
         
+        """Алгоритм Брезенхэма: возвращает список точек для движения"""
         points = []
-        while (x1 != x2) or (y1 != y2):
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+
+        while True:
             points.append((x1, y1))
-        
-            dx = x2 - x1
-            dy = y2 - y1
-        
-            # Определяем направление
-            sx = 1 if dx > 0 else -1
-            sy = 1 if dy > 0 else -1
-        
-            # Смотрим, по какой оси разница больше
-            if abs(dx) >= abs(dy):
+            if x1 == x2 and y1 == y2:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
                 x1 += sx
-            else:
+            if e2 < dx:
+                err += dx
                 y1 += sy
-    
-        # Добавляем конечную точку
-        points.append((x2, y2))
+
         return points
     
     def start(self):

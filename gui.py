@@ -23,6 +23,7 @@ class LaserGUI(QWidget):
         self.pixmap.fill(Qt.GlobalColor.white)
         self.canvas.setPixmap(self.pixmap)
         
+        self.canvas.mousePressEvent = self.on_canvas_click
         self.trail = []
         self.laser_x = 250
         self.laser_y = 250
@@ -70,6 +71,25 @@ class LaserGUI(QWidget):
         speed = int(self.speed_input.text())
         self.client.send_move_command(x, y, speed)       
     
+    def on_canvas_click(self, event):
+        
+        click_x = event.position().x()
+        click_y = event.position().y()
+        
+        x = int(click_x)
+        y = int(click_y)
+        
+        self.x_input.setText(str(x))
+        self.y_input.setText(str(y))
+        
+        speed = int(self.speed_input.text())
+        
+        self.client.send_move_command(x, y, speed)
+        
+        
+        
+          
+      
     def draw_laser(self):
         self.pixmap.fill(Qt.GlobalColor.white)
         painter = QPainter(self.pixmap)
