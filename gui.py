@@ -1,10 +1,10 @@
 import sys
 import cv2
-from PyQt6.QtWidgets import QApplication, QWidget , QPushButton,  QLineEdit, QLabel, QVBoxLayout, QFrame, QGridLayout, QFileDialog
-from PyQt6.QtGui import QPixmap, QPainter, QColor
+from PyQt6.QtWidgets import QApplication, QWidget , QPushButton,  QLineEdit, QLabel, QVBoxLayout, QFrame, QGridLayout, QFileDialog, QSpinBox
+from PyQt6.QtGui import QPixmap, QPainter, QColor, QIntValidator
 from PyQt6.QtCore import Qt
 from client import LaserClient 
-from test2 import Line, scan_lines, ThreeViewsWindow
+from image import Line, scan_lines, ThreeViewsWindow
 
 
 class LaserGUI(QWidget):
@@ -49,10 +49,13 @@ class LaserGUI(QWidget):
         self.open_button.clicked.connect(self.on_open_image)
 
         #поля ввода
-        self.x_input = QLineEdit("400")
-        self.y_input = QLineEdit("400")
-        self.speed_input = QLineEdit("5")
-        
+        self.x_input = QLineEdit("250")
+        self.x_input.setValidator(QIntValidator(0, 500, self))
+        self.y_input = QLineEdit("250")
+        self.y_input.setValidator(QIntValidator(0, 500, self))
+        self.speed_input = QSpinBox(self)
+        self.speed_input.setRange(1, 10)  # Скорость от 1 до 10
+        self.speed_input.setValue(5)
         #подписи
         self.label_x = QLabel("X:")
         self.label_y = QLabel("Y:")
@@ -85,6 +88,7 @@ class LaserGUI(QWidget):
             return
 
         # Загружаем gray
+        img_o = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
         img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             print("Failed to load:", file_path)
@@ -101,21 +105,23 @@ class LaserGUI(QWidget):
             self.views_window = ThreeViewsWindow()
 
         # Передаём данные
-        self.views_window.update_views(img, thresh, lines)
+        self.views_window.update_views(img_o, thresh, lines)
         self.views_window.show()  
                
     def on_move_button_click(self):
         
         x = int(self.x_input.text())
         y = int(self.y_input.text())
-        speed = int(self.speed_input.text())
+        speed = int(self.speed_input.value())
         self.client.send_move_command(x, y, speed)    
                
     def on_toggle_button_click(self):
         self.client.send_toggle_command()
     
     def on_reset_button_click(self):
-        self.client.send_reset_command()      
+        self.client.send_reset_command()
+        self.x_input.setText("250")
+        self.y_input.setText("250")      
     def on_canvas_click(self, event):
         
         click_x = event.position().x()

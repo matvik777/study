@@ -54,7 +54,7 @@ class LaserClient:
                 data, _ = self.udp_socket.recvfrom(1024)
                 status = json.loads(data.decode("utf-8"))
                 print(f"Laser: {status}")
-                radiation = status["radiation"]
+                
                 if self.gui:
                     self.gui.update_laser_position(status["x"], status["y"], status["radiation"], status["move_id"])
             except Exception as e:
