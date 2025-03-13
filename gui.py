@@ -1,8 +1,12 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget , QPushButton,  QLineEdit, QLabel, QVBoxLayout, QFrame, QGridLayout
+import cv2
+from PyQt6.QtWidgets import QApplication, QWidget , QPushButton,  QLineEdit, QLabel, QVBoxLayout, QFrame, QGridLayout, QFileDialog
 from PyQt6.QtGui import QPixmap, QPainter, QColor
 from PyQt6.QtCore import Qt
 from client import LaserClient 
+from test2 import Line, scan_lines, ThreeViewsWindow
+
+
 class LaserGUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -34,7 +38,6 @@ class LaserGUI(QWidget):
         self.client = LaserClient()
         self.client.set_gui(self)
         
-                
         #создаем кнопки
         self.move_button = QPushButton("Move Laser", self)
         self.move_button.clicked.connect(self.on_move_button_click)
@@ -42,6 +45,9 @@ class LaserGUI(QWidget):
         self.toggle_button.clicked.connect(self.on_toggle_button_click)
         self.reset_button = QPushButton("Reset", self)
         self.reset_button.clicked.connect(self.on_reset_button_click)
+        self.open_button = QPushButton("Open Image")
+        self.open_button.clicked.connect(self.on_open_image)
+
         #поля ввода
         self.x_input = QLineEdit("400")
         self.y_input = QLineEdit("400")
@@ -53,7 +59,7 @@ class LaserGUI(QWidget):
         self.label_speed = QLabel("Speed:")
         
         
-        
+        self.views_window = None
         #размещаем кнопку
         grid_layout = QGridLayout()
         grid_layout.addWidget(self.label_x, 0, 0)
@@ -65,11 +71,39 @@ class LaserGUI(QWidget):
         grid_layout.addWidget(self.move_button, 1,0,1,6)
         grid_layout.addWidget(self.toggle_button,2,0,1,6)
         grid_layout.addWidget(self.reset_button, 3, 0, 1, 6)
+        grid_layout.addWidget(self.open_button, 4, 0, 1, 6)
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.frame, alignment=Qt.AlignmentFlag.AlignCenter)
         main_layout.addLayout(grid_layout)
         self.setLayout(main_layout)
-             
+        
+    def on_open_image(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Image", "", "Images (*.png *.jpg *.bmp)"
+        )
+        if not file_path:
+            return
+
+        # Загружаем gray
+        img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            print("Failed to load:", file_path)
+            return
+
+        # Threshold
+        _, thresh = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+
+        # Сканируем
+        lines = scan_lines(thresh)
+
+        # Создаём / открываем окно ThreeViewsWindow
+        if self.views_window is None:
+            self.views_window = ThreeViewsWindow()
+
+        # Передаём данные
+        self.views_window.update_views(img, thresh, lines)
+        self.views_window.show()  
+               
     def on_move_button_click(self):
         
         x = int(self.x_input.text())
@@ -157,7 +191,9 @@ class LaserGUI(QWidget):
         
         self.draw_laser()    
         
-    
+   
+        
+            
        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
