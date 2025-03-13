@@ -5,7 +5,7 @@ from PyQt6.QtGui import QPixmap, QPainter, QColor, QIntValidator
 from PyQt6.QtCore import Qt
 from client import LaserClient 
 from image import Line, scan_lines, ThreeViewsWindow
-
+import time
 
 class LaserGUI(QWidget):
     def __init__(self):
@@ -14,6 +14,13 @@ class LaserGUI(QWidget):
         # создаем окно
         self.setWindowTitle("Управление лазером")
         self.setGeometry(100, 100, 600, 700)
+        
+        
+        #status label
+        self.label_status = QLabel("X: 250  Y: 250  Speed:  5  ON")
+        self.label_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.label_status.setStyleSheet("font-size: 9pt; color: black; font-weight: 300;")
         
         #поле для рисования
         self.frame = QFrame(self)
@@ -62,6 +69,7 @@ class LaserGUI(QWidget):
         self.label_speed = QLabel("Speed:")
         
         
+        
         self.views_window = None
         #размещаем кнопку
         grid_layout = QGridLayout()
@@ -76,6 +84,7 @@ class LaserGUI(QWidget):
         grid_layout.addWidget(self.reset_button, 3, 0, 1, 6)
         grid_layout.addWidget(self.open_button, 4, 0, 1, 6)
         main_layout = QVBoxLayout()
+        main_layout.addWidget(self.label_status)
         main_layout.addWidget(self.frame, alignment=Qt.AlignmentFlag.AlignCenter)
         main_layout.addLayout(grid_layout)
         self.setLayout(main_layout)
@@ -87,9 +96,11 @@ class LaserGUI(QWidget):
         if not file_path:
             return
 
-        # Загружаем gray
+        
         img_o = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
+        img_o = cv2.resize(img_o, (500,500))
         img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
+        img = cv2.resize(img, (500,500))
         if img is None:
             print("Failed to load:", file_path)
             return
@@ -98,15 +109,16 @@ class LaserGUI(QWidget):
         _, thresh = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
         # Сканируем
-        lines = scan_lines(thresh)
-
+        lines = scan_lines(thresh)  
+            
+            
         # Создаём / открываем окно ThreeViewsWindow
         if self.views_window is None:
             self.views_window = ThreeViewsWindow()
 
         # Передаём данные
         self.views_window.update_views(img_o, thresh, lines)
-        self.views_window.show()  
+        self.views_window.show()    
                
     def on_move_button_click(self):
         
@@ -179,6 +191,12 @@ class LaserGUI(QWidget):
         self.radiation = radiation
         self.laser_x = x
         self.laser_y = y
+        
+        speed_str = str(self.speed_input.value())
+        rad_str = "ON" if self.radiation else "OFF"
+        
+        status_text = f"X:  {self.laser_x}  Y:  {self.laser_y}  Speed:  {speed_str}  {rad_str}"
+        self.label_status.setText(status_text)
         if move_id == 0:
             self.path.clear()
             self.laser_x = 250

@@ -23,7 +23,7 @@ def scan_lines(thresh_img):
         has_line = False
         current_line = None
         for x in range(width):
-            if thresh_img[y, x] == 255:
+            if thresh_img[y, x] == 0:
                 if has_line:
                     current_line.ex += 1
                 else:
@@ -126,9 +126,9 @@ class ThreeViewsWindow(QMainWindow):
         возвращает QPixmap.
         """
         qimg = QImage(width, height, QImage.Format.Format_RGB888)
-        qimg.fill(Qt.GlobalColor.black)
+        qimg.fill(Qt.GlobalColor.white)
 
-        color = QColor(255, 255, 255)
+        color = QColor(0, 0, 0)
         for ln in lines:
             x_start = ln.x
             x_end   = ln.x + ln.ex
